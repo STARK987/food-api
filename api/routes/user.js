@@ -69,7 +69,7 @@ router.post('/login', (req, res, next) =>{
                         userId: user[0]._id,
                     },process.env.JWT_KEY,
                     {
-                        expiresIn: "1h"
+                        expiresIn: "720h"
                     }
                     );
 
@@ -97,6 +97,42 @@ router.get('/:userID/orders',checkAuth, (req, res, next) =>{
         message: 'User Orders Displayed here'
     });
     
+});
+
+router.get('/getAll', (req, res, next) =>{
+    User.find()
+        .exec()
+        .then(docs => {
+            const response = {
+                count: docs.length,
+                products: docs.map(doc =>{
+                    return{
+                        email: doc.email,
+                        password: doc.password,
+                        userId: doc.userId,
+                        _id: doc._id,
+                        request: {
+                            type: 'DELETE',
+                            url: 'http://localhost:3000/users/' + doc._id
+                        }
+                    }
+                })
+            };
+            if(docs.length >= 0){
+                res.status(200).json(response);
+            }else{
+                res.status(200).json({
+                    message: 'No entries found'
+                })
+            }
+            
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({
+                error: err
+            });
+        });
 });
 
 router.delete('/:userId', (req, res, next) => {

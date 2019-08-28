@@ -5,12 +5,14 @@ const checkAuth = require('../middelware/check-auth');
 
 const Order = require('../models/order');
 const Product = require('../models/product');
+const User = require('../models/user');
 
 router.get('/',checkAuth, (req, res, next) =>{
     Order
     .find()
-    .select('product quantity _id')
+    .select('product quantity _id contact address')
     .populate('product', 'name')
+    .populate('user', 'email')
     .exec()
     .then(docs => {
         res.status(200).json({
@@ -20,6 +22,9 @@ router.get('/',checkAuth, (req, res, next) =>{
                     _id: doc._id,
                     product: doc.product,
                     quantity: doc.quantity,
+                    user: doc.user,
+                    contact: doc.contact,
+                    address: doc.address,
                     request: {
                         type: 'GET',
                         url: 'http://localhost:3000/orders/' + doc._id
@@ -37,6 +42,14 @@ router.get('/',checkAuth, (req, res, next) =>{
 });
 
 router.post('/', checkAuth, (req, res, next) =>{
+    User.findById(req.body.userId)
+        .then(user => {
+            if(!user){
+                return res.status(401).json({
+                    message: "Unauthorize User"
+                })
+            }
+        });
     Product.findById(req.body.productId)
         .then(product =>{
             if(!product){
@@ -47,7 +60,10 @@ router.post('/', checkAuth, (req, res, next) =>{
             const order = new Order({
                 _id: mongoose.Types.ObjectId(),
                 quantity: req.body.quantity,
-                product: req.body.productId
+                product: req.body.productId,
+                user: req.body.userId,
+                contact: req.body.contact,
+                address: req.body.address
             });
             return order.save();
         })
@@ -77,6 +93,7 @@ router.post('/', checkAuth, (req, res, next) =>{
 router.get('/:orderId',checkAuth, (req, res, next) =>{
     Order.findById(req.params.orderId)
         .populate('product')
+        .populate('user')
         .exec()
         .then(order => {
             if(!order){
